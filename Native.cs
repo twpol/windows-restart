@@ -39,6 +39,12 @@ namespace Windows_Restart
         [DllImport("user32", SetLastError = true)]
         public static extern uint GetLastInputInfo(ref LastInputInfo lastInputInfo);
 
+        [DllImport("kernel32", SetLastError = true)]
+        public static extern uint GetCurrentProcessId();
+
+        [DllImport("kernel32", SetLastError = true)]
+        public static extern uint ProcessIdToSessionId(uint processId, out uint sessionId);
+
         [DllImport("powrprof.dll", SetLastError = true)]
         public static extern uint CallNtPowerInformation(PowerInformationLevel informationLevel, byte[] inputBuffer, int inputBufferSize, out ExecutionState outputBuffer, int outputBufferSize);
     }

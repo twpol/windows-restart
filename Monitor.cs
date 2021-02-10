@@ -40,6 +40,11 @@ namespace Windows_Restart
                 data["user_idle_ms"] = tickCount - lii.Time;
             }
 
+            if (0 != Native.ProcessIdToSessionId(Native.GetCurrentProcessId(), out var sessionId))
+            {
+                data["session.id"] = sessionId;
+            }
+
             if (0 == Native.CallNtPowerInformation(PowerInformationLevel.SystemExecutionState, null, 0, out ExecutionState state, 8))
             {
                 data["execution_state"] = state;
