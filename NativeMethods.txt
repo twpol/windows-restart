@@ -1,0 +1,22 @@
+// uptime
+GetTickCount
+
+// execution_state
+POWER_INFORMATION_LEVEL
+
+// session
+ProcessIdToSessionId
+
+// user_idle
+LASTINPUTINFO
+GetCurrentProcessId
+GetLastInputInfo
+
+// RunAsConsoleUser()
+GetCurrentProcess
+WTSGetActiveConsoleSessionId
+WTSQueryUserToken
+STARTUPINFOW
+CreateProcessAsUser
+WaitForSingleObject
+CloseHandle
