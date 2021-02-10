@@ -31,6 +31,15 @@ namespace Windows_Restart
                 { "name", "monitor" },
             };
 
+            var tickCount = Native.GetTickCount();
+            data["uptime_ms"] = tickCount;
+
+            var lii = new LastInputInfo(0);
+            if (0 != Native.GetLastInputInfo(ref lii) && lii.Time > 0)
+            {
+                data["user_idle_ms"] = tickCount - lii.Time;
+            }
+
             if (0 == Native.CallNtPowerInformation(PowerInformationLevel.SystemExecutionState, null, 0, out ExecutionState state, 8))
             {
                 data["execution_state"] = state;

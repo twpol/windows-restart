@@ -19,8 +19,26 @@ namespace Windows_Restart
         SystemExecutionState = 16,
     }
 
+    struct LastInputInfo
+    {
+        public int Size;
+        public uint Time;
+
+        public LastInputInfo(uint time)
+        {
+            Size = Marshal.SizeOf(typeof(LastInputInfo));
+            Time = time;
+        }
+    }
+
     static class Native
     {
+        [DllImport("kernel32", SetLastError = true)]
+        public static extern uint GetTickCount();
+
+        [DllImport("user32", SetLastError = true)]
+        public static extern uint GetLastInputInfo(ref LastInputInfo lastInputInfo);
+
         [DllImport("powrprof.dll", SetLastError = true)]
         public static extern uint CallNtPowerInformation(PowerInformationLevel informationLevel, byte[] inputBuffer, int inputBufferSize, out ExecutionState outputBuffer, int outputBufferSize);
     }
