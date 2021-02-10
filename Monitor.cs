@@ -54,6 +54,12 @@ namespace Windows_Restart
                 data["session.id"] = sessionId;
             }
 
+            if (0 == PInvoke.SHQueryUserNotificationState(out var notificationState))
+            {
+                data["notification_state"] = notificationState;
+                data["notification_state.name"] = Enum.GetName(typeof(QUERY_USER_NOTIFICATION_STATE), notificationState);
+            }
+
             var lii = new LASTINPUTINFO()
             {
                 cbSize = (uint)Marshal.SizeOf(typeof(LASTINPUTINFO)),

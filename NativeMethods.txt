@@ -7,6 +7,10 @@ POWER_INFORMATION_LEVEL
 // session
 ProcessIdToSessionId
 
+// notification_state
+SHQueryUserNotificationState
+QUERY_USER_NOTIFICATION_STATE
+
 // user_idle
 LASTINPUTINFO
 GetCurrentProcessId
