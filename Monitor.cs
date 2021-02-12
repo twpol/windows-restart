@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using Microsoft.Win32;
 using Microsoft.Windows.Sdk;
 
 namespace Windows_Restart
@@ -66,6 +67,18 @@ namespace Windows_Restart
             if (PInvoke.GetLastInputInfo(out lii) && lii.dwTime > 0)
             {
                 data["user_idle_ms"] = PInvoke.GetTickCount() - lii.dwTime;
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                using (var sessionManager = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager"))
+                {
+                    var pending = sessionManager.GetValue("PendingFileRenameOperations") as string[];
+                    if (pending != null)
+                    {
+                        data["pending_renames.count"] = pending.Length;
+                    }
+                }
             }
 
             RaiseEvent(this, new EventEventArgs(JsonSerializer.Serialize(data)));
