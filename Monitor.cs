@@ -79,6 +79,26 @@ namespace Windows_Restart
                         data["pending_renames.count"] = pending.Length;
                     }
                 }
+
+                try
+                {
+                    dynamic autoUpdate = Activator.CreateInstance(Type.GetTypeFromProgID("Microsoft.Update.AutoUpdate", true));
+                    data["auto_update.last_check_date"] = autoUpdate.Results.LastSearchSuccessDate;
+                    data["auto_update.last_install_date"] = autoUpdate.Results.LastInstallationSuccessDate;
+                    data["auto_update.enabled"] = autoUpdate.ServiceEnabled;
+                    data["auto_update.settings.notification_level"] = autoUpdate.Settings.NotificationLevel;
+                    data["auto_update.settings.read_only"] = autoUpdate.Settings.ReadOnly;
+                    data["auto_update.settings.required"] = autoUpdate.Settings.Required;
+                    data["auto_update.settings.scheduled_installation_day"] = autoUpdate.Settings.ScheduledInstallationDay;
+                    data["auto_update.settings.scheduled_installation_time"] = autoUpdate.Settings.ScheduledInstallationTime;
+                    data["auto_update.settings.include_recommended_updates"] = autoUpdate.Settings.IncludeRecommendedUpdates;
+                    data["auto_update.settings.non_administrators_elevated"] = autoUpdate.Settings.NonAdministratorsElevated;
+                    data["auto_update.settings.featured_updates_enabled"] = autoUpdate.Settings.FeaturedUpdatesEnabled;
+                }
+                catch (Exception error)
+                {
+                    data["auto_update.error"] = error.Message + "\n" + error.StackTrace;
+                }
             }
 
             RaiseEvent(this, new EventEventArgs(JsonSerializer.Serialize(data)));
