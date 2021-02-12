@@ -1,5 +1,5 @@
 // uptime
-GetTickCount
+GetTickCount64
 
 // execution_state
 POWER_INFORMATION_LEVEL
@@ -12,6 +12,7 @@ SHQueryUserNotificationState
 QUERY_USER_NOTIFICATION_STATE
 
 // user_idle
+GetTickCount
 LASTINPUTINFO
 GetCurrentProcessId
 GetLastInputInfo

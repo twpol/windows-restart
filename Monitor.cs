@@ -37,8 +37,7 @@ namespace Windows_Restart
                 { "name", "monitor" },
             };
 
-            var tickCount = PInvoke.GetTickCount();
-            data["uptime_ms"] = tickCount;
+            data["uptime_ms"] = PInvoke.GetTickCount64();
 
             if (0 == Native.CallNtPowerInformation(POWER_INFORMATION_LEVEL.SystemExecutionState, null, 0, out ExecutionState state, 8))
             {
@@ -66,7 +65,7 @@ namespace Windows_Restart
             };
             if (PInvoke.GetLastInputInfo(out lii) && lii.dwTime > 0)
             {
-                data["user_idle_ms"] = tickCount - lii.dwTime;
+                data["user_idle_ms"] = PInvoke.GetTickCount() - lii.dwTime;
             }
 
             RaiseEvent(this, new EventEventArgs(JsonSerializer.Serialize(data)));
