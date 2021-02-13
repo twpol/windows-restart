@@ -38,39 +38,39 @@ namespace Windows_Restart
                 { "name", "monitor" },
             };
 
-            data["uptime_ms"] = PInvoke.GetTickCount64();
-
-            if (0 == Native.CallNtPowerInformation(POWER_INFORMATION_LEVEL.SystemExecutionState, null, 0, out ExecutionState state, 8))
-            {
-                data["execution_state"] = state;
-                data["execution_state.display_required"] = (state & ExecutionState.DisplayRequired) != 0;
-                data["execution_state.system_required"] = (state & ExecutionState.SystemRequired) != 0;
-                data["execution_state.awaymode_required"] = (state & ExecutionState.AwaymodeRequired) != 0;
-                data["execution_state.user_present"] = (state & ExecutionState.UserPresent) != 0;
-            }
-
-            if (PInvoke.ProcessIdToSessionId(PInvoke.GetCurrentProcessId(), out var sessionId))
-            {
-                data["session.id"] = sessionId;
-            }
-
-            if (0 == PInvoke.SHQueryUserNotificationState(out var notificationState))
-            {
-                data["notification_state"] = notificationState;
-                data["notification_state.name"] = Enum.GetName(typeof(QUERY_USER_NOTIFICATION_STATE), notificationState);
-            }
-
-            var lii = new LASTINPUTINFO()
-            {
-                cbSize = (uint)Marshal.SizeOf(typeof(LASTINPUTINFO)),
-            };
-            if (PInvoke.GetLastInputInfo(out lii) && lii.dwTime > 0)
-            {
-                data["user_idle_ms"] = PInvoke.GetTickCount() - lii.dwTime;
-            }
-
             if (OperatingSystem.IsWindows())
             {
+                data["uptime_ms"] = PInvoke.GetTickCount64();
+
+                if (0 == Native.CallNtPowerInformation(POWER_INFORMATION_LEVEL.SystemExecutionState, null, 0, out ExecutionState state, 8))
+                {
+                    data["execution_state"] = state;
+                    data["execution_state.display_required"] = (state & ExecutionState.DisplayRequired) != 0;
+                    data["execution_state.system_required"] = (state & ExecutionState.SystemRequired) != 0;
+                    data["execution_state.awaymode_required"] = (state & ExecutionState.AwaymodeRequired) != 0;
+                    data["execution_state.user_present"] = (state & ExecutionState.UserPresent) != 0;
+                }
+
+                if (PInvoke.ProcessIdToSessionId(PInvoke.GetCurrentProcessId(), out var sessionId))
+                {
+                    data["session.id"] = sessionId;
+                }
+
+                if (0 == PInvoke.SHQueryUserNotificationState(out var notificationState))
+                {
+                    data["notification_state"] = notificationState;
+                    data["notification_state.name"] = Enum.GetName(typeof(QUERY_USER_NOTIFICATION_STATE), notificationState);
+                }
+
+                var lii = new LASTINPUTINFO()
+                {
+                    cbSize = (uint)Marshal.SizeOf(typeof(LASTINPUTINFO)),
+                };
+                if (PInvoke.GetLastInputInfo(out lii) && lii.dwTime > 0)
+                {
+                    data["user_idle_ms"] = PInvoke.GetTickCount() - lii.dwTime;
+                }
+
                 using (var sessionManager = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager"))
                 {
                     var pending = sessionManager.GetValue("PendingFileRenameOperations") as string[];

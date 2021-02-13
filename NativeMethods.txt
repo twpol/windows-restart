@@ -5,6 +5,7 @@ GetTickCount64
 POWER_INFORMATION_LEVEL
 
 // session
+GetCurrentProcessId
 ProcessIdToSessionId
 
 // notification_state
@@ -14,7 +15,6 @@ QUERY_USER_NOTIFICATION_STATE
 // user_idle
 GetTickCount
 LASTINPUTINFO
-GetCurrentProcessId
 GetLastInputInfo
 
 // RunAsConsoleUser()
