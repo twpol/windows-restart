@@ -82,9 +82,12 @@ namespace Windows_Restart
 
                 try
                 {
+                    dynamic systemInfo = Activator.CreateInstance(Type.GetTypeFromProgID("Microsoft.Update.SystemInfo", true));
+                    data["auto_update.restart_required"] = systemInfo.RebootRequired;
+
                     dynamic autoUpdate = Activator.CreateInstance(Type.GetTypeFromProgID("Microsoft.Update.AutoUpdate", true));
-                    data["auto_update.last_check_date"] = autoUpdate.Results.LastSearchSuccessDate;
-                    data["auto_update.last_install_date"] = autoUpdate.Results.LastInstallationSuccessDate;
+                    data["auto_update.last_check_date"] = DateTime.SpecifyKind(autoUpdate.Results.LastSearchSuccessDate, DateTimeKind.Utc).ToString("o");
+                    data["auto_update.last_install_date"] = DateTime.SpecifyKind(autoUpdate.Results.LastInstallationSuccessDate, DateTimeKind.Utc).ToString("o");
                     data["auto_update.enabled"] = autoUpdate.ServiceEnabled;
                     data["auto_update.settings.notification_level"] = autoUpdate.Settings.NotificationLevel;
                     data["auto_update.settings.read_only"] = autoUpdate.Settings.ReadOnly;
