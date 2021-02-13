@@ -22,8 +22,6 @@ namespace Windows_Restart
 
     class Monitor
     {
-        public bool CaptureConsoleUser { get; set; }
-
         public event EventHandler<EventEventArgs> RaiseEvent;
 
         public Monitor()
@@ -31,6 +29,14 @@ namespace Windows_Restart
         }
 
         public void Execute()
+        {
+            if (HasTcbPrivilege())
+                RunAsConsoleUser();
+            else
+                CollectData();
+        }
+
+        public void CollectData()
         {
             var data = new Dictionary<string, object> {
                 { "meta.local_hostname", Dns.GetHostName() },
@@ -105,8 +111,29 @@ namespace Windows_Restart
             }
 
             RaiseEvent(this, new EventEventArgs(JsonSerializer.Serialize(data)));
+        }
 
-            if (CaptureConsoleUser) RunAsConsoleUser();
+        unsafe bool HasTcbPrivilege()
+        {
+            if (!PInvoke.LookupPrivilegeValue(null, "SeTcbPrivilege", out var tcbPrivilege)) return false;
+
+            if (!PInvoke.OpenProcessToken(PInvoke.GetCurrentProcess(), Native.TOKEN_QUERY, out var processToken)) return false;
+
+            try
+            {
+                var privilegeSet = new PRIVILEGE_SET()
+                {
+                    PrivilegeCount = 1,
+                };
+                privilegeSet.Privilege[0].Luid = tcbPrivilege;
+                if (!PInvoke.PrivilegeCheck(new CloseHandleSafeHandle(processToken), ref privilegeSet, out var checkResult) || checkResult == 0) return false;
+
+                return true;
+            }
+            finally
+            {
+                PInvoke.CloseHandle(new HANDLE(processToken));
+            }
         }
 
         unsafe void RunAsConsoleUser()

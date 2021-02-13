@@ -15,6 +15,8 @@ namespace Windows_Restart
 
     static class Native
     {
+        public const uint TOKEN_QUERY = 0x0008;
+
         [DllImport("powrprof.dll", SetLastError = true)]
         public static extern uint CallNtPowerInformation(POWER_INFORMATION_LEVEL informationLevel, byte[] inputBuffer, int inputBufferSize, out ExecutionState outputBuffer, int outputBufferSize);
     }

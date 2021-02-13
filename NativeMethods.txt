@@ -17,6 +17,14 @@ GetTickCount
 LASTINPUTINFO
 GetLastInputInfo
 
+// HasTcbPrivilege()
+LookupPrivilegeValue
+GetCurrentProcess
+OpenProcessToken
+PrivilegeCheck
+PRIVILEGE_SET
+CloseHandle
+
 // RunAsConsoleUser()
 GetCurrentProcess
 WTSGetActiveConsoleSessionId
