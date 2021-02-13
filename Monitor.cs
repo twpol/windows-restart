@@ -40,6 +40,9 @@ namespace Windows_Restart
         {
             var data = new Dictionary<string, object> {
                 { "meta.local_hostname", Dns.GetHostName() },
+                { "meta.local_platform", Environment.OSVersion.Platform },
+                { "meta.local_version", Environment.OSVersion.Version },
+                { "meta.local_os", Environment.OSVersion },
                 { "service_name", "windows-restart" },
                 { "name", "monitor" },
             };
