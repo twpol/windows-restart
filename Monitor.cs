@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -24,19 +25,21 @@ namespace Windows_Restart
     {
         public event EventHandler<EventEventArgs> RaiseEvent;
 
+        const string HKCU_Windows_Restart = @"Software\Windows Restart";
+        const string KeyRestartRequiredSince = "Restart Required Since";
+
         public Monitor()
         {
         }
 
         public void Execute()
         {
-            if (HasTcbPrivilege())
-                RunAsConsoleUser();
-            else
-                CollectData();
+            var data = HasTcbPrivilege() ? GetConsoleUserData() : GetData();
+            ApplyPersistentData(data);
+            RaiseEvent(this, new EventEventArgs(JsonSerializer.Serialize(data)));
         }
 
-        public void CollectData()
+        public Dictionary<string, object> GetData()
         {
             var data = new Dictionary<string, object> {
                 { "meta.local_hostname", Dns.GetHostName() },
@@ -113,7 +116,7 @@ namespace Windows_Restart
                 }
             }
 
-            RaiseEvent(this, new EventEventArgs(JsonSerializer.Serialize(data)));
+            return data;
         }
 
         unsafe bool HasTcbPrivilege()
@@ -139,33 +142,66 @@ namespace Windows_Restart
             }
         }
 
-        unsafe void RunAsConsoleUser()
+        unsafe Dictionary<string, object> GetConsoleUserData()
         {
             var executableFilePath = Process.GetCurrentProcess().MainModule.FileName;
 
             nint token = 0;
-            if (!PInvoke.WTSQueryUserToken(PInvoke.WTSGetActiveConsoleSessionId(), ref token)) return;
+            if (!PInvoke.WTSQueryUserToken(PInvoke.WTSGetActiveConsoleSessionId(), ref token)) throw new Win32Exception(Marshal.GetLastWin32Error());
 
             try
             {
                 var tempFile = Path.GetTempFileName();
                 var tempDir = Path.GetTempFileName();
                 File.Delete(tempDir);
-                using (var stdout = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Inheritable))
+                try
                 {
-                    var si = new STARTUPINFOW();
-                    si.hStdOutput = new HANDLE(token);
-                    Environment.SetEnvironmentVariable("TMP", tempDir);
-                    Environment.SetEnvironmentVariable("TEMP", tempDir);
-                    if (!PInvoke.CreateProcessAsUser(new CloseHandleSafeHandle(token, false), null, $"\"{executableFilePath}\" --once", null, null, true, 0, null, null, si, out var pi)) return;
-                    if (0 != PInvoke.WaitForSingleObject(new CloseHandleSafeHandle(pi.hProcess), 10000)) return;
+                    using (var stdout = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Inheritable))
+                    {
+                        var si = new STARTUPINFOW();
+                        si.cb = (uint)Marshal.SizeOf(si);
+                        si.hStdOutput = new HANDLE(stdout.SafeFileHandle.DangerousGetHandle());
+                        si.dwFlags = Native.STARTF_USESTDHANDLES;
+                        Environment.SetEnvironmentVariable("TMP", tempDir);
+                        Environment.SetEnvironmentVariable("TEMP", tempDir);
+                        if (!PInvoke.CreateProcessAsUser(new CloseHandleSafeHandle(token, false), null, $"\"{executableFilePath}\" --once", null, null, true, 0, null, null, si, out var pi)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                        if (0 != PInvoke.WaitForSingleObject(new CloseHandleSafeHandle(pi.hProcess), 10000)) throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                    return JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(tempFile));
                 }
-                RaiseEvent(this, new EventEventArgs(File.ReadAllText(tempFile)));
-                File.Delete(tempFile);
+                finally
+                {
+                    File.Delete(tempFile);
+                }
             }
             finally
             {
                 PInvoke.CloseHandle(new HANDLE(token));
+            }
+        }
+
+        void ApplyPersistentData(Dictionary<string, object> data)
+        {
+            if (OperatingSystem.IsWindows() && data.ContainsKey("auto_update.restart_required"))
+            {
+                var restartRequired = data["auto_update.restart_required"].ToString() == "True";
+                using (var key = Registry.CurrentUser.CreateSubKey(HKCU_Windows_Restart, true))
+                {
+                    var restartRequiredSince = key.GetValue(KeyRestartRequiredSince) as long? ?? 0;
+
+                    if (restartRequired && restartRequiredSince == 0)
+                    {
+                        restartRequiredSince = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                        key.SetValue(KeyRestartRequiredSince, restartRequiredSince, RegistryValueKind.QWord);
+                    }
+                    else if (!restartRequired && restartRequiredSince != 0)
+                    {
+                        restartRequiredSince = 0;
+                        key.DeleteValue(KeyRestartRequiredSince);
+                    }
+
+                    data["auto_update.restart_required_since"] = restartRequiredSince > 0 ? DateTimeOffset.FromUnixTimeSeconds(restartRequiredSince).UtcDateTime.ToString("o") : null;
+                }
             }
         }
     }
