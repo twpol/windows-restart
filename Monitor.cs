@@ -50,6 +50,8 @@ namespace Windows_Restart
                 { "name", "monitor" },
             };
 
+            AddDetailedOSVersion(data);
+
             if (OperatingSystem.IsWindows())
             {
                 data["uptime_ms"] = PInvoke.GetTickCount64();
@@ -117,6 +119,29 @@ namespace Windows_Restart
             }
 
             return data;
+        }
+
+        void AddDetailedOSVersion(Dictionary<string, object> data)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                // Note that this code only works correctly on Windows 10
+                using (var key = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows NT\CurrentVersion"))
+                {
+                    // Environment.OSVersion.Version.Build is always 0 so override with UBR (update patch level, as displayed in `winver`)
+                    if (!int.TryParse(key.GetValue("CurrentBuild") as string, out var currentBuild))
+                    {
+                        currentBuild = Environment.OSVersion.Version.Revision;
+                    }
+                    var ubr = key.GetValue("UBR") as int? ?? Environment.OSVersion.Version.Build;
+                    data["meta.local_version"] = new Version(Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Minor, currentBuild, ubr).ToString();
+
+                    // DisplayVersion is new for 20H2 (overriding ReleaseId=2009)
+                    var displayVersion = key.GetValue("DisplayVersion") as string ?? key.GetValue("ReleaseId") as string;
+                    data["meta.local_os"] = $"Microsoft Windows {displayVersion} ({data["meta.local_version"]})";
+                    data["meta.local_os_release"] = displayVersion;
+                }
+            }
         }
 
         unsafe bool HasTcbPrivilege()
